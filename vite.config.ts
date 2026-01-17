@@ -7,4 +7,12 @@ export default defineConfig({
   // https://<username>.github.io/<repo>/  (GitHub Pages).
   base: "/uOttahack8/",
   plugins: [react()],
+  server: {
+    proxy: {
+      "/api": {
+        target: "http://localhost:3001",
+        changeOrigin: true,
+      },
+    },
+  },
 });
