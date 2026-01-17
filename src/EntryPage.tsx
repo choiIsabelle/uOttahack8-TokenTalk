@@ -16,7 +16,7 @@ const EntryPage: React.FC = () => {
     // show summary after finish
     return (
       <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500">
-        <div className="bg-white/90 dark:bg-gray-900/70 rounded-xl p-8 max-w-xl w-full text-center">
+        <div className="bg-white/90 dark:bg-gray-900/70 rounded-xl p-8 max-w-xl w-full text-center text-gray-800 dark:text-gray-100">
           <h2 className="text-2xl font-bold mb-4">Setup complete</h2>
           <p className="mb-4">Here's what you selected:</p>
           <div className="mb-4 text-left">
