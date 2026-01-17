@@ -3,93 +3,50 @@ import LandingPage from "./LandingPage";
 
 const EntryPage: React.FC = () => {
   const [started, setStarted] = useState(false);
-  type FinishData = {
-    role: string | null;
-    from: string | null;
-    to: string | null;
-    file?: File | null;
-    text?: string | null;
-  };
-  const [result, setResult] = useState<FinishData | null>(null);
-
-  if (!started && result) {
-    // show summary after finish
-    return (
-      <div className="min-h-screen flex items-center justify-center p-6">
-        <div className="bg-white/90 dark:bg-gray-900/70 rounded-xl p-8 max-w-xl w-full text-center">
-          <h2 className="text-2xl font-bold mb-4">Setup complete</h2>
-          <p className="mb-4">Here's what you selected:</p>
-          <div className="mb-4 text-left">
-            <div>
-              <strong>Role:</strong> {result.role ?? "—"}
-            </div>
-            <div>
-              <strong>From:</strong> {result.from ?? "—"}
-            </div>
-            <div>
-              <strong>To:</strong> {result.to ?? "—"}
-            </div>
-            {result.file && (
-              <div>
-                <strong>File:</strong> {result.file.name}
-              </div>
-            )}
-            {result.text && (
-              <div>
-                <strong>Text:</strong> {result.text.slice(0, 200)}
-                {result.text.length > 200 ? "..." : ""}
-              </div>
-            )}
-          </div>
-          <div className="flex justify-center gap-3">
-            <button
-              className="px-4 py-2 rounded-full bg-blue-600 text-white hover:bg-blue-700 transition-colors"
-              onClick={() => {
-                setResult(null);
-                setStarted(false);
-              }}
-            >
-              Start over
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6">
-      {!started ? (
-        <div className="text-center text-white max-w-3xl">
-          <h1 className="text-4xl sm:text-5xl font-extrabold">
-            Find the best AI model for translation!
-          </h1>
-          <p className="mt-4 text-lg opacity-90">
-            Quickly pick your role, languages, and upload a file or paste text
-            to translate.
-          </p>
-
-          <div className="mt-8">
-            <button
-              onClick={() => setStarted(true)}
-              className="px-6 py-3 bg-white text-blue-600 rounded-full font-semibold shadow hover:scale-105 transition-transform"
+    <div className="min-h-screen flex items-center justify-center p-6 relative bg-gradient-to-br from-indigo-700/60 via-blue-500/40 to-pink-400/30">
+      <div className="absolute inset-0 flex items-center justify-center z-0 pointer-events-none select-none">
+        <img src="./geegees.png" alt="geegees logo" className="opacity-40" />
+      </div>
+      {/* Main content overlay */}
+      <div className="relative z-10 w-full flex items-center justify-center">
+        {!started ? (
+          <div className="text-center text-white max-w-3xl">
+            <h1
+              className="text-4xl sm:text-5xl font-extrabold drop-shadow-lg shadow-black"
+              style={{ textShadow: "0 4px 24px #000, 0 1px 0 #222" }}
             >
-              Let's go!
-            </button>
+              Find the best AI model for translation!
+            </h1>
+            <p
+              className="mt-4 text-xl font-semibold opacity-90 drop-shadow"
+              style={{ textShadow: "0 4px 24px #000, 0 1px 0 #222" }}
+            >
+              Quickly pick your role, languages, and upload a file or paste text
+              to translate.
+            </p>
+            <div className="mt-8">
+              <button
+                onClick={() => setStarted(true)}
+                className="px-6 py-3 bg-blue-600 text-white rounded-full font-semibold shadow hover:scale-105 transition-transform"
+              >
+                Let's go!
+              </button>
+            </div>
           </div>
-        </div>
-      ) : (
-        <div className="w-full">
-          <LandingPage
-            onBack={() => setStarted(false)}
-            onFinish={(data) => {
-              console.log("LandingPage finished:", data);
-              setResult(data);
-              setStarted(false);
-            }}
-          />
-        </div>
-      )}
+        ) : (
+          <div className="w-full">
+            <LandingPage
+              onBack={() => setStarted(false)}
+              onFinish={(data) => {
+                console.log("LandingPage finished:", data);
+                setStarted(false);
+              }}
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 };
