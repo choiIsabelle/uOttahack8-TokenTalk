@@ -1,5 +1,6 @@
 # uOttahack8
 
+TokenTalk was created for uOttahack8, hosted at the University of Ottawa (Winter 2026).
 Project uses [OpenRouter SDK](https://openrouter.ai/docs/quickstart) to evaluate the efficiency of several Large Language Models when processing a user task.
 The results are evaluated objectively utilzing modern machine learning processes.
 
@@ -16,6 +17,7 @@ API: [OpenRouter](https://openrouter.ai/docs/quickstart)
 ```
 OPENROUTER_API_KEY=<YOUR_OPENROUTER_API_KEY>
 OPENROUTER_MODEL=openai/gpt-4o-mini
+// Other models
 ```
 
 2. In one terminal, run `npm run dev`
