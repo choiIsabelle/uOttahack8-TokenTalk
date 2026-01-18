@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React from "react";
 import { type ModelTranslation } from "./api/translate";
 
 interface EvaluationPageProps {
@@ -35,40 +35,31 @@ function tokenize(text: string): string[] {
   return text.toLowerCase().replace(/[^\w\s]/g, '').split(/\s+/).filter(w => w.length > 0);
 }
 
-// Lexical Similarity: Jaccard similarity of word sets
-function calculateLexicalSimilarity(translations: string[]): number[] {
-  if (translations.length < 2) return translations.map(() => 100);
+// Lexical Similarity: Jaccard similarity with original text
+function calculateLexicalSimilarity(original: string, backTranslations: string[]): number[] {
+  if (backTranslations.length === 0) return [];
   
-  const tokenSets = translations.map(t => new Set(tokenize(t)));
+  const originalTokens = new Set(tokenize(original));
   
-  return tokenSets.map((set, i) => {
-    // Compare with all other translations
-    let totalSimilarity = 0;
-    let comparisons = 0;
-    
-    tokenSets.forEach((otherSet, j) => {
-      if (i !== j) {
-        const intersection = new Set([...set].filter(x => otherSet.has(x)));
-        const union = new Set([...set, ...otherSet]);
-        totalSimilarity += union.size > 0 ? (intersection.size / union.size) * 100 : 0;
-        comparisons++;
-      }
-    });
-    
-    return comparisons > 0 ? totalSimilarity / comparisons : 100;
+  return backTranslations.map(backTranslation => {
+    const backTokens = new Set(tokenize(backTranslation));
+    const intersection = new Set([...originalTokens].filter(x => backTokens.has(x)));
+    const union = new Set([...originalTokens, ...backTokens]);
+    return union.size > 0 ? (intersection.size / union.size) * 100 : 0;
   });
 }
 
-// Vector Space Similarity: TF-based cosine similarity
-function calculateVectorSimilarity(translations: string[]): number[] {
-  if (translations.length < 2) return translations.map(() => 100);
+// Vector Space Similarity: TF-based cosine similarity with original
+function calculateVectorSimilarity(original: string, backTranslations: string[]): number[] {
+  if (backTranslations.length === 0) return [];
   
-  // Build vocabulary
-  const allTokens = translations.flatMap(t => tokenize(t));
+  // Build vocabulary from original + all back-translations
+  const allTokens = [original, ...backTranslations].flatMap(t => tokenize(t));
   const vocab = [...new Set(allTokens)];
   
   // Create TF vectors
-  const vectors = translations.map(t => {
+  const originalVec = vocab.map(word => tokenize(original).filter(w => w === word).length);
+  const vectors = backTranslations.map(t => {
     const tokens = tokenize(t);
     return vocab.map(word => tokens.filter(w => w === word).length);
   });
@@ -81,24 +72,12 @@ function calculateVectorSimilarity(translations: string[]): number[] {
     return magnitudeA && magnitudeB ? (dotProduct / (magnitudeA * magnitudeB)) * 100 : 0;
   };
   
-  return vectors.map((vec, i) => {
-    let totalSimilarity = 0;
-    let comparisons = 0;
-    
-    vectors.forEach((otherVec, j) => {
-      if (i !== j) {
-        totalSimilarity += cosineSimilarity(vec, otherVec);
-        comparisons++;
-      }
-    });
-    
-    return comparisons > 0 ? totalSimilarity / comparisons : 100;
-  });
+  return vectors.map(vec => cosineSimilarity(originalVec, vec));
 }
 
-// Semantic Similarity: N-gram overlap + length consistency
-function calculateSemanticSimilarity(translations: string[]): number[] {
-  if (translations.length < 2) return translations.map(() => 100);
+// Semantic Similarity: N-gram overlap + length consistency with original
+function calculateSemanticSimilarity(original: string, backTranslations: string[]): number[] {
+  if (backTranslations.length === 0) return [];
   
   // Get bigrams
   const getBigrams = (text: string): Set<string> => {
@@ -110,31 +89,23 @@ function calculateSemanticSimilarity(translations: string[]): number[] {
     return bigrams;
   };
   
-  const bigramSets = translations.map(getBigrams);
-  const lengths = translations.map(t => tokenize(t).length);
-  const avgLength = lengths.reduce((a, b) => a + b, 0) / lengths.length;
+  const originalBigrams = getBigrams(original);
+  const originalLength = tokenize(original).length;
   
-  return translations.map((_, i) => {
-    // Bigram overlap with others
-    let bigramScore = 0;
-    let comparisons = 0;
+  return backTranslations.map(backTranslation => {
+    const backBigrams = getBigrams(backTranslation);
+    const backLength = tokenize(backTranslation).length;
     
-    bigramSets.forEach((otherSet, j) => {
-      if (i !== j) {
-        const intersection = new Set([...bigramSets[i]].filter(x => otherSet.has(x)));
-        const union = new Set([...bigramSets[i], ...otherSet]);
-        bigramScore += union.size > 0 ? (intersection.size / union.size) * 100 : 0;
-        comparisons++;
-      }
-    });
+    // Bigram overlap with original
+    const intersection = new Set([...originalBigrams].filter(x => backBigrams.has(x)));
+    const union = new Set([...originalBigrams, ...backBigrams]);
+    const bigramScore = union.size > 0 ? (intersection.size / union.size) * 100 : 0;
     
-    const avgBigramScore = comparisons > 0 ? bigramScore / comparisons : 100;
-    
-    // Length consistency penalty
-    const lengthScore = 100 - Math.min(50, Math.abs(lengths[i] - avgLength) * 5);
+    // Length consistency score
+    const lengthScore = 100 - Math.min(50, Math.abs(backLength - originalLength) * 5);
     
     // Combined semantic score
-    return (avgBigramScore * 0.7 + lengthScore * 0.3);
+    return (bigramScore * 0.7 + lengthScore * 0.3);
   });
 }
 
@@ -161,28 +132,111 @@ const EvaluationPage: React.FC<EvaluationPageProps> = ({
   to,
   onBack,
 }) => {
-  // Calculate scores for all successful translations
-  const scores: ModelScore[] = useMemo(() => {
-    const successfulTranslations = translations.filter(t => t.translation && !t.error);
-    const translationTexts = successfulTranslations.map(t => t.translation!);
-    
-    const lexicalScores = calculateLexicalSimilarity(translationTexts);
-    const vectorScores = calculateVectorSimilarity(translationTexts);
-    const semanticScores = calculateSemanticSimilarity(translationTexts);
-    
-    return successfulTranslations.map((t, i) => ({
-      key: t.key,
-      name: t.name,
-      translation: t.translation!,
-      lexicalScore: lexicalScores[i],
-      vectorScore: vectorScores[i],
-      semanticScore: semanticScores[i],
-      overallScore: (lexicalScores[i] + vectorScores[i] + semanticScores[i]) / 3,
-    }));
-  }, [translations]);
+  const [scores, setScores] = React.useState<ModelScore[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  
+  // Create a stable cache key for the current evaluation
+  const cacheKey = React.useMemo(() => {
+    const translationHash = translations
+      .map(t => `${t.key}:${t.translation}`)
+      .join('|');
+    return `backTranslations_${from}_${to}_${translationHash}`;
+  }, [translations, from, to]);
+  
+  // Calculate scores using back-translations
+  React.useEffect(() => {
+    const calculateScores = async () => {
+      try {
+        const successfulTranslations = translations.filter(t => t.translation && !t.error);
+        
+        let backTranslations = null;
+        
+        // Check if we have cached back-translations
+        const cachedData = localStorage.getItem(cacheKey);
+        if (cachedData) {
+          console.log('Using cached back-translations');
+          backTranslations = JSON.parse(cachedData);
+        } else {
+          // Fetch back-translations if not cached
+          console.log('Fetching new back-translations');
+          const backTransRes = await fetch('/api/back-translate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              translations: successfulTranslations,
+              from,
+              to
+            })
+          });
+
+          if (!backTransRes.ok) {
+            throw new Error('Failed to fetch back-translations');
+          }
+
+          const backTransData = await backTransRes.json();
+          backTranslations = backTransData.backTranslations;
+          
+          // Cache the back-translations for future reloads
+          localStorage.setItem(cacheKey, JSON.stringify(backTranslations));
+        }
+
+        // Calculate scores using back-translations
+        const backTranslationTexts = backTranslations
+          .filter((bt: any) => bt.backTranslation)
+          .map((bt: any) => bt.backTranslation);
+
+        const lexicalScores = calculateLexicalSimilarity(original, backTranslationTexts);
+        const vectorScores = calculateVectorSimilarity(original, backTranslationTexts);
+        const semanticScores = calculateSemanticSimilarity(original, backTranslationTexts);
+
+        // Map scores back to models
+        const calculatedScores = successfulTranslations
+          .map((t, i) => {
+            const backTrans = backTranslations.find((bt: any) => bt.key === t.key);
+            if (!backTrans?.backTranslation) {
+              return null;
+            }
+            return {
+              key: t.key,
+              name: t.name,
+              translation: t.translation!,
+              lexicalScore: lexicalScores[i],
+              vectorScore: vectorScores[i],
+              semanticScore: semanticScores[i],
+              overallScore: (lexicalScores[i] + vectorScores[i] + semanticScores[i]) / 3,
+            };
+          })
+          .filter((score): score is ModelScore => score !== null);
+
+        setScores(calculatedScores);
+        setLoading(false);
+      } catch (err) {
+        console.error('Error calculating scores:', err);
+        setLoading(false);
+      }
+    };
+
+    calculateScores();
+  }, [cacheKey, translations, original]);
 
   // Sort by overall score
   const sortedScores = [...scores].sort((a, b) => b.overallScore - a.overallScore);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen p-6 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center">
+        <div className="bg-white/95 dark:bg-gray-900/90 rounded-2xl p-8 text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-purple-500 border-t-transparent mx-auto mb-4" />
+          <p className="text-lg font-semibold text-gray-800 dark:text-white">
+            Back-translating and evaluating accuracy...
+          </p>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+            This may take a moment
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen p-6 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500">
@@ -205,15 +259,15 @@ const EvaluationPage: React.FC<EvaluationPageProps> = ({
           <div className="grid md:grid-cols-3 gap-4 mb-8">
             <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
               <h4 className="font-semibold text-blue-700 dark:text-blue-300 mb-1">📊 Lexical Similarity</h4>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Word overlap between translations (Jaccard index)</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Word overlap between back-translation and original (Jaccard index)</p>
             </div>
             <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
               <h4 className="font-semibold text-green-700 dark:text-green-300 mb-1">🎯 Vector Similarity</h4>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Keyword & context similarity (TF cosine)</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Keyword & context similarity with original (TF cosine)</p>
             </div>
             <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4">
               <h4 className="font-semibold text-purple-700 dark:text-purple-300 mb-1">🧠 Semantic Similarity</h4>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Meaning & structure consistency (N-gram + length)</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">N-gram & length consistency with original</p>
             </div>
           </div>
         </div>

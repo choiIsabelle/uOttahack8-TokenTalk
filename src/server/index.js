@@ -10,7 +10,7 @@ app.use(express.json());
 const MODELS = {
   chatgpt: {
     id: process.env.MODEL_CHATGPT || 'openai/gpt-4o-mini',
-    name: 'ChatGPT 5.2'
+    name: 'ChatGPT 4o Mini'
   },
   gemini: {
     id: process.env.MODEL_GEMINI || 'google/gemini-2.0-flash-001',
@@ -34,7 +34,7 @@ console.log('API Key loaded:', process.env.OPENROUTER_API_KEY ? 'Yes' : 'No');
 console.log('Models loaded:', Object.keys(MODELS).join(', '));
 
 // Helper function to call OpenRouter API - DRY
-async function callOpenRouter(modelId, prompt) {
+async function callOpenRouter(modelId, prompt, temperature = 0.7) {
   const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -45,7 +45,8 @@ async function callOpenRouter(modelId, prompt) {
     },
     body: JSON.stringify({
       model: modelId,
-      messages: [{ role: 'user', content: prompt }]
+      messages: [{ role: 'user', content: prompt }],
+      temperature: temperature
     })
   });
   return response.json();
@@ -59,6 +60,58 @@ app.get('/api/models', (req, res) => {
     name: value.name
   }));
   res.json({ models });
+});
+
+// Back-translate texts for evaluation
+app.post('/api/back-translate', async (req, res) => {
+  const { translations, from, to } = req.body;
+  
+  console.log('Received back-translation request:', { 
+    translations: translations.length, 
+    from, 
+    to 
+  });
+
+  if (!translations || !Array.isArray(translations) || !from || !to) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+
+  try {
+    // Back-translate each model's translation back to original language
+    const backTranslationPromises = translations.map(async (item) => {
+      const { key, name, translation } = item;
+      const model = MODELS[key];
+      
+      if (!translation) {
+        return { key, name, backTranslation: null, error: 'No translation' };
+      }
+
+      const prompt = `Translate the following text from ${to} back to ${from}. Only return the translation, nothing else.\n\nText: ${translation}`;
+
+      try {
+        // Use temperature 0 for deterministic/consistent back-translations for evaluation
+        const data = await callOpenRouter(model.id, prompt, 0);
+        
+        if (data.error) {
+          console.error(`Back-translation error for ${name}:`, data.error);
+          return { key, name, backTranslation: null, error: data.error.message };
+        }
+
+        const backTranslation = data.choices?.[0]?.message?.content || null;
+        console.log(`Back-translation for ${name} complete`);
+        return { key, name, backTranslation, error: null };
+      } catch (err) {
+        console.error(`Error back-translating ${name}:`, err.message);
+        return { key, name, backTranslation: null, error: err.message };
+      }
+    });
+
+    const backTranslations = await Promise.all(backTranslationPromises);
+    res.json({ backTranslations });
+  } catch (err) {
+    console.error('Back-translation error:', err);
+    res.status(500).json({ error: 'Back-translation failed. Please try again.' });
+  }
 });
 
 // Translate with ALL models in parallel
