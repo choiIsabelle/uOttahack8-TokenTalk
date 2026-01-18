@@ -65,6 +65,7 @@ const LandingPage: React.FC<LandingPageProps> = ({
   const [file, setFile] = useState<File | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
   const [textInput, setTextInput] = useState<string>("");
+  const [textError, setTextError] = useState<string | null>(null);
 
   const validateFile = (f: File) => {
     const allowedMimes = [
@@ -348,9 +349,14 @@ const LandingPage: React.FC<LandingPageProps> = ({
                 </label>
                 <textarea
                   value={textInput}
-                  onChange={(e) => setTextInput(e.target.value)}
+                  onChange={(e) => {
+                    setTextInput(e.target.value);
+                    if (e.target.value.trim() || file) setTextError(null);
+                  }}
                   placeholder="Paste or type text here as an alternative to uploading a file"
-                  className="w-full min-h-[120px] p-3 border rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                  className={`w-full min-h-[120px] p-3 border rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 ${
+                    textError ? "border-red-500" : ""
+                  }`}
                 />
               </div>
 
@@ -358,19 +364,31 @@ const LandingPage: React.FC<LandingPageProps> = ({
                 <div className="flex flex-col items-center gap-3">
                   <button
                     type="button"
-                    onClick={() =>
+                    onClick={() => {
+                      if (!file && !textInput.trim()) {
+                        setTextError(
+                          "Please provide text to translate (either upload a file or enter text)."
+                        );
+                        return;
+                      }
+                      setTextError(null);
                       onFinish?.({
                         role: selected,
                         from: fromLang,
                         to: toLang,
                         file,
                         text: textInput || null,
-                      })
-                    }
+                      });
+                    }}
                     className={`text-lg px-4 py-2 rounded-full font-medium transition bg-blue-600 text-white shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400`}
                   >
-                    Finish
+                    Translate
                   </button>
+                  {textError && (
+                    <div className="mt-2 text-red-600 text-sm text-center">
+                      {textError}
+                    </div>
+                  )}
 
                   <button
                     type="button"
