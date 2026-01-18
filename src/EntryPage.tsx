@@ -2,7 +2,10 @@ import React, { useState } from "react";
 import LandingPage from "./LandingPage";
 import ResultsPage from "./ResultsPage";
 import EvaluationPage from "./EvaluationPage";
-import { translateWithAllModels, type MultiTranslateResponse } from "./api/translate";
+import {
+  translateWithAllModels,
+  type MultiTranslateResponse,
+} from "./api/translate";
 
 type FinishData = {
   role: string | null;
@@ -12,13 +15,14 @@ type FinishData = {
   text?: string | null;
 };
 
-type PageView = 'home' | 'landing' | 'results' | 'evaluation';
+type PageView = "home" | "landing" | "results" | "evaluation";
 
 const EntryPage: React.FC = () => {
-  const [currentPage, setCurrentPage] = useState<PageView>('home');
+  const [currentPage, setCurrentPage] = useState<PageView>("home");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [translationResult, setTranslationResult] = useState<MultiTranslateResponse | null>(null);
+  const [translationResult, setTranslationResult] =
+    useState<MultiTranslateResponse | null>(null);
 
   const handleFinish = async (data: FinishData) => {
     console.log("LandingPage finished:", data);
@@ -46,7 +50,7 @@ const EntryPage: React.FC = () => {
         text: textContent,
       });
       setTranslationResult(result);
-      setCurrentPage('results');
+      setCurrentPage("results");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Translation failed");
     } finally {
@@ -55,20 +59,20 @@ const EntryPage: React.FC = () => {
   };
 
   /* ---------------- Evaluation Page ---------------- */
-  if (currentPage === 'evaluation' && translationResult) {
+  if (currentPage === "evaluation" && translationResult) {
     return (
       <EvaluationPage
         original={translationResult.original}
         translations={translationResult.translations}
         from={translationResult.from}
         to={translationResult.to}
-        onBack={() => setCurrentPage('results')}
+        onBack={() => setCurrentPage("results")}
       />
     );
   }
 
   /* ---------------- Results Page ---------------- */
-  if (currentPage === 'results' && translationResult) {
+  if (currentPage === "results" && translationResult) {
     return (
       <ResultsPage
         original={translationResult.original}
@@ -78,9 +82,9 @@ const EntryPage: React.FC = () => {
         role={translationResult.role}
         onBack={() => {
           setTranslationResult(null);
-          setCurrentPage('home');
+          setCurrentPage("home");
         }}
-        onEvaluate={() => setCurrentPage('evaluation')}
+        onEvaluate={() => setCurrentPage("evaluation")}
       />
     );
   }
@@ -103,7 +107,7 @@ const EntryPage: React.FC = () => {
   }
 
   /* ---------------- Landing Page (form) ---------------- */
-  if (currentPage === 'landing') {
+  if (currentPage === "landing") {
     return (
       <div className="min-h-screen flex items-center justify-center p-6 relative bg-gradient-to-br from-indigo-700/60 via-blue-500/40 to-pink-400/30">
         <div className="absolute inset-0 flex items-center justify-center z-0 pointer-events-none select-none">
@@ -116,7 +120,7 @@ const EntryPage: React.FC = () => {
         <div className="relative z-10 w-full flex items-center justify-center">
           <div className="w-full">
             <LandingPage
-              onBack={() => setCurrentPage('home')}
+              onBack={() => setCurrentPage("home")}
               onFinish={handleFinish}
             />
           </div>
@@ -151,13 +155,29 @@ const EntryPage: React.FC = () => {
             className="mt-4 text-xl font-semibold opacity-90"
             style={{ textShadow: "0 4px 24px #000, 0 1px 0 #222" }}
           >
-            Compare translations from 5 leading AI models and see which one performs best.
+            Compare translations from 5 leading AI models and see which one
+            performs best.
           </p>
 
           {/* Model badges */}
           <div className="flex flex-wrap justify-center gap-2 mt-6">
-            {['ChatGPT 5.2', 'Gemini 3 Flash', 'Claude Haiku 4.5', 'DeepSeek V3.2', 'Llama 4 Scout'].map(model => (
-              <span key={model} className="px-3 py-1 bg-white/20 rounded-full text-sm font-medium backdrop-blur">
+            {[
+              "ChatGPT 4o Mini",
+              "Gemini 3 Flash",
+              "Claude Haiku 4.5",
+              "DeepSeek V3.2",
+              "Llama 4 Scout",
+            ].map((model) => (
+              <span
+                key={model}
+                className="px-3 py-1 rounded-full text-sm font-medium backdrop-blur"
+                style={{
+                  background: "rgb(54 114 202 / 56%)",
+                  color: "#fff",
+                  textShadow: "0 4px 24px #000, 0 1px 0 #222",
+                  boxShadow: "0 2px 8px rgba(99,102,241,0.15)",
+                }}
+              >
                 {model}
               </span>
             ))}
@@ -165,7 +185,7 @@ const EntryPage: React.FC = () => {
 
           <div className="mt-8">
             <button
-              onClick={() => setCurrentPage('landing')}
+              onClick={() => setCurrentPage("landing")}
               className="px-6 py-3 bg-blue-600 text-white rounded-full font-semibold shadow hover:scale-105 transition-transform"
             >
               Let&apos;s go!

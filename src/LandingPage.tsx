@@ -41,24 +41,20 @@ const LandingPage: React.FC<LandingPageProps> = ({
     "Spanish",
     "French",
     "German",
-    "Chinese",
-    "Japanese",
-    "Korean",
     "Portuguese",
     "Italian",
-    "Russian",
+    "Romanian",
+    "Indonesian",
   ];
   const LANGUAGE_EMOJI: Record<string, string> = {
     English: "🇺🇸",
     Spanish: "🇪🇸",
     French: "🇫🇷",
     German: "🇩🇪",
-    Chinese: "🇨🇳",
-    Japanese: "🇯🇵",
-    Korean: "🇰🇷",
     Portuguese: "🇵🇹",
     Italian: "🇮🇹",
-    Russian: "🇷🇺",
+    Romanian: "🇷🇴",
+    Indonesian: "🇮🇩",
   };
   const [fromLang, setFromLang] = useState<string | null>(null);
   const [toLang, setToLang] = useState<string | null>(null);
