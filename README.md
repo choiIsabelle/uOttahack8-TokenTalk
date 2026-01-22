@@ -13,22 +13,26 @@ API: [OpenRouter](https://openrouter.ai/docs/quickstart)
 
 ## Project Structure
 
+```
 src/
-├── App.tsx              # Main React app entry; renders EntryPage and sets up global styles/background
-├── App.css              # App-wide CSS, including gradient backgrounds and scoped styles
-├── EntryPage.tsx        # Landing page with animated background, launches the multi-step wizard
-├── LandingPage.tsx      # Multi-step wizard for role/language selection, file/text input, and validation
-├── ResultsPage.tsx      # Displays translation results and allows copying or restarting
+├── App.tsx            # Main React app entry; renders EntryPage and sets up global styles/background
+├── App.css            # App-wide CSS, including gradient backgrounds and scoped styles
 ├── api/
-│   └── translate.ts     # API utility for sending translation requests to the backend
-├── main.tsx             # React root renderer; mounts App to the DOM
-├── index.css            # Tailwind CSS imports and base styles
-├── assets/
-│   └── react.svg        # Example static asset (can include other images/icons)
-└── server/
-    ├── index.js         # Node.js Express backend for translation API (can be adapted for AWS Lambda)
-    ├── .env             # Backend environment variables (API keys, model config) – ignored by git
-    └── package.json     # Backend dependencies and scripts
+│   └── translate.ts   # API utility for sending translation requests to the backend
+├── assets/            # Static assets like images and icons
+│   └── react.svg      # Example asset
+├── components/        # React components organized by feature or page
+│   ├── EntryPage.tsx  # Landing page with animated background; launches the multi-step wizard
+│   ├── LandingPage.tsx # Multi-step wizard for role/language selection, file/text input, and validation
+│   └── ResultsPage.tsx # Displays translation results; allows copying or restarting
+├── index.css          # Tailwind CSS imports and base styles
+├── main.tsx           # React root renderer; mounts App to the DOM
+
+server/
+├── index.js           # Node.js Express backend for the translation API
+├── .env               # Environment variables (e.g., API keys, model config) – ignored by git
+└── package.json       # Backend dependencies and scripts
+```
 
 ## Local Set Up Instructions
 
